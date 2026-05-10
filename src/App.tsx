@@ -265,7 +265,7 @@ export default function App() {
 </p>
 
           <div className="button-row">
-            <a className="btn primary" href="mailto:your-aashishthapa700@gmail.com">Email Me</a>
+            <a className="btn primary" href="mailto:aashishthapa700@gmail.com">Email Me</a>
             <a className="btn secondary" href="https://github.com/AashishThapaMagar" target="_blank" rel="noreferrer">
               GitHub
             </a>
