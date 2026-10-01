@@ -157,7 +157,7 @@ main,
 }
 .mark {
   position: relative;
-  width: 38px;
+  width: 46px;
   height: 38px;
   border-radius: 10px;
   background: #0b0d13;
@@ -177,10 +177,13 @@ main,
   grid-area: 1 / 1;
 }
 .mark b:first-child {
-  transform: translateX(-6px);
+  transform: translateX(-11px);
 }
 .mark b:nth-child(2) {
-  transform: translateX(7px);
+  transform: translateX(0);
+}
+.mark b:nth-child(3) {
+  transform: translateX(11px);
 }
 .mark i {
   position: absolute;

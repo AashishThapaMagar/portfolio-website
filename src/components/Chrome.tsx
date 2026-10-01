@@ -58,6 +58,7 @@ export function Nav() {
         <span className="mark">
           <b>A</b>
           <b>T</b>
+          <b>M</b>
           <i />
         </span>
         <span className="brand-name">Aashish Thapa Magar</span>
