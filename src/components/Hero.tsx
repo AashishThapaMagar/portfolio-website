@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowDown, ArrowUpRight, Download } from "lucide-react";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { profile, stats, techTicker } from "../data";
 import { Counter, GithubIcon, LinkedinIcon, Reveal } from "./ui";
@@ -114,8 +114,8 @@ export function Hero() {
             <a className="btn primary" href="#game">
               Watch the reel <ArrowDown size={16} />
             </a>
-            <a className="btn ghost" href={profile.resume} target="_blank" rel="noreferrer">
-              <Download size={16} /> Résumé
+            <a className="btn ghost" href="/play/">
+              Play my portfolio <ArrowUpRight size={16} />
             </a>
             <a className="icon-btn" href={profile.github} target="_blank" rel="noreferrer" aria-label="GitHub">
               <GithubIcon />

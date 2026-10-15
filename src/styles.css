@@ -175,6 +175,8 @@ main,
   z-index: 1;
   font-weight: 400;
   grid-area: 1 / 1;
+  /* Dark outline keeps the letters readable where the slash crosses them. */
+  text-shadow: 0 0 2px #0b0d13, 0 0 3px #0b0d13, 0 0 4px #0b0d13;
 }
 .mark b:first-child {
   transform: translateX(-11px);
