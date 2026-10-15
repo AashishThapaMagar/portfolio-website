@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Aashish Portfolio</title>
+<meta name="description" content="Aashish Thapa Magar's portfolio as a playable fighting game, built from his game Who Won?" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #07080c;
+    --panel: rgba(11, 13, 19, 0.9);
+    --line: rgba(255, 255, 255, 0.13);
+    --gold: #f2b84b;
+    --red: #e0334c;
+    --text: #f4f1ea;
+    --muted: #a1a2ae;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); color: var(--text); font-family: "Inter", system-ui, sans-serif; }
+  canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+  a { color: var(--gold); }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  .hidden { display: none !important; }
+  .display { font-family: "Anton", Impact, sans-serif; font-weight: 400; text-transform: uppercase; letter-spacing: 0.02em; }
+  .mono { font-family: "JetBrains Mono", monospace; letter-spacing: 0.16em; text-transform: uppercase; }
+  .screen { position: fixed; inset: 0; z-index: 5; }
+
+  .top-links { position: fixed; top: 14px; right: 16px; z-index: 20; display: flex; gap: 8px; }
+  .chip-btn { background: var(--panel); border: 1px solid var(--line); color: var(--text); border-radius: 999px; padding: 8px 14px; font-size: 13px; text-decoration: none; }
+  .chip-btn:hover { border-color: var(--gold); color: var(--gold); }
+  body[data-screen="hud"] .top-links, body[data-screen="vs"] .top-links { display: none; }
+
+  /* ---------- title */
+  #title { display: grid; place-items: center; padding: 16px; background: radial-gradient(ellipse at center, rgba(7,8,12,0.25), rgba(7,8,12,0.85)); }
+  .title-box { text-align: center; max-width: 720px; }
+  .title-box .kicker { font-size: 12px; color: var(--gold); }
+  .title-box h1 { font-size: clamp(56px, 12vw, 132px); line-height: 0.9; margin: 14px 0 16px; text-shadow: 0 6px 30px rgba(0,0,0,0.5); }
+  .title-box h1 span { color: var(--gold); display: block; }
+  .title-box p { color: #e1ded6; font-size: 16px; line-height: 1.55; margin: 0 auto 24px; max-width: 540px; text-shadow: 0 2px 10px rgba(0,0,0,0.6); }
+  .big-btn { background: var(--gold); color: var(--ink); border: 0; border-radius: 999px; padding: 15px 34px; font-family: "Anton", sans-serif; font-size: 21px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .big-btn:hover { filter: brightness(1.08); }
+  .big-btn:disabled { opacity: 0.6; cursor: wait; }
+  .ghost-btn { display: inline-block; border: 1px solid var(--line); background: var(--panel); color: var(--text); border-radius: 999px; padding: 14px 22px; text-decoration: none; font-size: 15px; }
+  .ghost-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .blink { animation: blink 1.2s steps(2, start) infinite; }
+  @keyframes blink { to { visibility: hidden; } }
+
+  /* ---------- select */
+  #select { pointer-events: none; }
+  #select > * { pointer-events: auto; }
+  .sel-head { position: absolute; top: 14px; left: 16px; }
+  .sel-head .mono { font-size: 11px; color: var(--gold); }
+  .sel-head h2 { font-size: clamp(28px, 4vw, 44px); margin: 2px 0 0; line-height: 1; }
+  .nameplate { position: absolute; top: 24%; max-width: 30vw; pointer-events: none; }
+  .nameplate.p1 { left: 4vw; }
+  .nameplate.p2 { right: 4vw; text-align: right; }
+  .nameplate .mono { font-size: 11px; color: var(--gold); }
+  .nameplate .name { font-size: clamp(32px, 5vw, 64px); line-height: 0.95; text-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+  .nameplate .sub { color: #e1ded6; font-size: 14px; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+  .roster { position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); width: min(980px, calc(100vw - 24px)); background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 14px; backdrop-filter: blur(10px); }
+  .slots { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; }
+  .slot { position: relative; border: 2px solid var(--line); border-radius: 14px; padding: 0; background: #12141c; overflow: hidden; text-align: left; aspect-ratio: 3 / 3.6; }
+  .slot img { width: 100%; height: 72%; object-fit: cover; object-position: top; display: block; background: linear-gradient(180deg, #232637, #12141c); }
+  .slot .label { padding: 5px 8px 7px; }
+  .slot .label b { display: block; font-family: "Anton", sans-serif; font-weight: 400; font-size: 16px; letter-spacing: 0.03em; line-height: 1.1; }
+  .slot .label small { font-family: "JetBrains Mono", monospace; font-size: 9.5px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
+  .slot .badge { position: absolute; top: 6px; right: 6px; font-family: "JetBrains Mono", monospace; font-size: 9px; letter-spacing: 0.1em; padding: 3px 6px; border-radius: 6px; background: rgba(7,8,12,0.8); color: var(--muted); }
+  .slot .badge.done { color: var(--ink); background: var(--gold); }
+  .slot.active { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(242,184,75,0.25); }
+  .slot:hover { border-color: rgba(242,184,75,0.7); }
+  .slot .contact-ico { height: 72%; display: grid; place-items: center; font-family: "Anton", sans-serif; font-size: 40px; color: var(--gold); background: linear-gradient(180deg, #232637, #12141c); }
+  .sel-info { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 12px; flex-wrap: wrap; }
+  .sel-info .desc { flex: 1 1 320px; font-size: 14px; color: #d6d4cd; line-height: 1.45; }
+  .sel-info .desc b { color: var(--text); }
+  .sel-actions { display: flex; gap: 8px; }
+  .act { border-radius: 999px; padding: 11px 20px; font-weight: 700; font-size: 14px; border: 1px solid var(--line); background: transparent; }
+  .act.primary { background: var(--red); border-color: var(--red); font-family: "Anton", sans-serif; font-weight: 400; letter-spacing: 0.06em; font-size: 17px; }
+  .act:hover { filter: brightness(1.1); border-color: var(--gold); }
+
+  /* ---------- vs */
+  #vs { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; background: linear-gradient(105deg, rgba(224,51,76,0.92) 0 49.6%, rgba(7,8,12,1) 49.6% 50.4%, rgba(36,52,96,0.94) 50.4%); overflow: hidden; }
+  #vs .side { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; }
+  #vs img { width: min(34vw, 340px); filter: drop-shadow(0 10px 30px rgba(0,0,0,0.5)); }
+  #vs .side .display { font-size: clamp(30px, 6vw, 70px); line-height: 1; text-shadow: 0 4px 0 rgba(0,0,0,0.35); }
+  #vs .side .mono { font-size: 11px; }
+  #vs .mid { font-family: "Anton", sans-serif; font-size: clamp(60px, 12vw, 150px); color: var(--gold); text-shadow: 0 6px 0 #7a1020; transform: skewX(-8deg); }
+  #vs .stage { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 12px; color: #fff; }
+  #vs.anim .side.l { animation: slideL 0.45s cubic-bezier(.2,.8,.2,1) both; }
+  #vs.anim .side.r { animation: slideR 0.45s cubic-bezier(.2,.8,.2,1) both; }
+  #vs.anim .mid { animation: pop 0.5s 0.3s cubic-bezier(.2,1.6,.4,1) both; }
+  @keyframes slideL { from { transform: translateX(-60vw); } }
+  @keyframes slideR { from { transform: translateX(60vw); } }
+  @keyframes pop { from { transform: scale(3) skewX(-8deg); opacity: 0; } }
+
+  /* ---------- fight HUD */
+  #hud { pointer-events: none; }
+  .bars { position: absolute; top: 12px; left: 12px; right: 12px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: start; }
+  .bar-wrap .who { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .bar-wrap.r .who { flex-direction: row-reverse; }
+  .bar-wrap .who img { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; object-position: top; border: 2px solid var(--line); background: #1a1c27; }
+  .bar-wrap .who b { font-family: "Anton", sans-serif; font-weight: 400; font-size: 22px; letter-spacing: 0.03em; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+  .bar-wrap .who small { display: block; font-family: "JetBrains Mono", monospace; font-size: 9.5px; letter-spacing: 0.14em; color: var(--gold); text-transform: uppercase; }
+  .bar-wrap.r .who > div { text-align: right; }
+  .bar { position: relative; height: 18px; background: rgba(7,8,12,0.8); border: 2px solid rgba(255,255,255,0.7); border-radius: 4px; overflow: hidden; transform: skewX(-14deg); }
+  .bar i { position: absolute; top: 0; bottom: 0; left: 0; }
+  .bar .lag { background: #fff; transition: width 0.6s 0.25s; }
+  .bar .hp { background: linear-gradient(180deg, #ffe08a, var(--gold) 55%, #c98a1c); transition: width 0.08s; }
+  .bar-wrap.r .bar i { left: auto; right: 0; }
+  .bar.low .hp { background: linear-gradient(180deg, #ff8d8d, var(--red)); }
+  .timer { font-family: "Anton", sans-serif; font-size: 44px; line-height: 1; padding: 4px 12px; border: 2px solid rgba(255,255,255,0.7); border-radius: 8px; background: rgba(7,8,12,0.8); min-width: 76px; text-align: center; }
+  .combo { position: absolute; top: 120px; font-family: "Anton", sans-serif; text-transform: uppercase; line-height: 0.9; color: var(--gold); text-shadow: 0 3px 0 #7a1020, 0 0 18px rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.2s; }
+  .combo.l { left: 22px; }
+  .combo.r { right: 22px; text-align: right; }
+  .combo.show { opacity: 1; }
+  .combo b { display: block; font-size: 64px; font-weight: 400; }
+  .combo span { font-size: 22px; letter-spacing: 0.06em; color: #fff; }
+  .announce { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .announce div { font-family: "Anton", sans-serif; font-size: clamp(64px, 14vw, 170px); text-transform: uppercase; color: #fff; text-shadow: 0 8px 0 #7a1020, 0 0 40px rgba(0,0,0,0.6); transform: skewX(-8deg); }
+  .announce div.gold { color: var(--gold); }
+  .announce div.pop { animation: pop 0.45s cubic-bezier(.2,1.6,.4,1) both; }
+  .fight-tools { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; pointer-events: auto; }
+  .moves { position: absolute; left: 14px; bottom: 14px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; font-size: 12px; color: var(--muted); line-height: 1.6; pointer-events: auto; }
+  .moves kbd { font-family: "JetBrains Mono", monospace; border: 1px solid var(--line); border-radius: 5px; padding: 0 5px; color: var(--text); font-size: 11px; }
+  .moves b { color: var(--gold); font-weight: 600; }
+
+  /* ---------- results / panels */
+  .panel-screen { display: grid; place-items: center; padding: 16px; background: rgba(7,8,12,0.72); backdrop-filter: blur(6px); }
+  .panel { width: min(900px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: #0d0f16; border: 1px solid var(--line); border-radius: 22px; padding: 26px clamp(18px, 3vw, 34px) 28px; box-shadow: 0 30px 80px rgba(0,0,0,0.6); }
+  .panel .kicker { font-size: 11px; color: var(--gold); }
+  .panel h2 { font-size: clamp(36px, 6vw, 64px); line-height: 0.95; margin: 6px 0 6px; }
+  .panel h2 span { color: var(--gold); }
+  .panel .lede { color: #d6d4cd; margin: 0 0 20px; font-size: 15px; line-height: 1.5; }
+  .panel-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+  .entries { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  .entry { border: 1px solid var(--line); border-radius: 16px; padding: 18px; background: #12141c; }
+  .entry.wide { grid-column: 1 / -1; }
+  .entry .k { font-family: "JetBrains Mono", monospace; font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 6px; }
+  .entry h3 { font-family: "Anton", sans-serif; font-weight: 400; font-size: 24px; letter-spacing: 0.02em; text-transform: uppercase; margin: 0 0 8px; line-height: 1.05; }
+  .entry p, .entry li { color: #d6d4cd; font-size: 14px; line-height: 1.55; }
+  .entry p { margin: 0 0 10px; }
+  .entry ul { margin: 0 0 10px; padding-left: 18px; }
+  .entry li { margin-bottom: 5px; }
+  .entry img, .entry video { width: 100%; border-radius: 10px; margin-bottom: 12px; display: block; border: 1px solid var(--line); background: #000; }
+  .tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 10px; }
+  .tags span { font-family: "JetBrains Mono", monospace; font-size: 11px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; color: var(--muted); }
+  .links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .links a { text-decoration: none; border: 1px solid var(--gold); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; }
+  .links a:hover { background: var(--gold); color: var(--ink); }
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .facts div { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: #12141c; }
+  .facts b { display: block; font-family: "Anton", sans-serif; font-weight: 400; font-size: 32px; color: var(--gold); line-height: 1; }
+  .facts small { color: var(--muted); font-size: 12px; }
+
+  /* ---------- touch */
+  .touch { position: fixed; left: 0; right: 0; bottom: 14px; display: none; justify-content: space-between; align-items: flex-end; padding: 0 14px; z-index: 8; pointer-events: none; }
+  .touch .pad { display: grid; gap: 10px; pointer-events: auto; }
+  .touch .dpad { grid-template-columns: repeat(3, 58px); }
+  .touch .btns { grid-template-columns: repeat(2, 62px); }
+  .touch button { height: 58px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); font-size: 18px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .touch .btns button { height: 62px; border-radius: 50%; font-family: "Anton", sans-serif; font-size: 15px; letter-spacing: 0.04em; }
+  .touch .btns .p { background: rgba(242,184,75,0.92); color: var(--ink); }
+  .touch .btns .k { background: rgba(224,51,76,0.92); }
+
+  @media (hover: none) and (pointer: coarse) {
+    #hud.on ~ .touch { display: flex; }
+    .moves { display: none; }
+  }
+  @media (max-width: 760px) {
+    .slots { grid-template-columns: repeat(3, 1fr); }
+    .slot { aspect-ratio: 3 / 3.2; }
+    .sel-head { top: 62px; }
+    .sel-head h2 { font-size: 26px; }
+    .nameplate { top: 128px; }
+    .nameplate .name { font-size: 30px; }
+    .nameplate .sub { display: none; }
+    .entries { grid-template-columns: 1fr; }
+    .facts { grid-template-columns: repeat(2, 1fr); }
+    .bar-wrap .who img { width: 34px; height: 34px; }
+    .bar-wrap .who b { font-size: 16px; }
+    .timer { font-size: 30px; min-width: 54px; }
+    .fight-tools { top: 84px; }
+    .combo { top: 130px; }
+    .combo b { font-size: 44px; }
+    #vs { grid-template-columns: 1fr; grid-template-rows: 1fr auto 1fr; background: linear-gradient(180deg, rgba(224,51,76,0.92) 0 49.6%, rgba(7,8,12,1) 49.6% 50.4%, rgba(36,52,96,0.94) 50.4%); }
+    #vs img { width: 34vh; }
+    body[data-screen="result"] .top-links { display: none; }
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="top-links">
+  <a class="chip-btn" href="/Aashish_Thapa_Magar_Resume.pdf" target="_blank" rel="noopener">Resume</a>
+  <a class="chip-btn" href="/">Classic site</a>
+</div>
+
+<!-- Title -->
+<section class="screen" id="title">
+  <div class="title-box">
+    <div class="kicker mono">A playable portfolio · built from my game <i>Who Won?</i></div>
+    <h1 class="display">Aashish<span>Portfolio</span></h1>
+    <p>Each fighter from my game guards a part of my work. Beat them to unlock it, or skip the fight and read it straight away. Nothing is locked for real.</p>
+    <button class="big-btn" id="startBtn" disabled>Loading…</button>
+  </div>
+</section>
+
+<!-- Select -->
+<section class="screen hidden" id="select">
+  <div class="sel-head"><div class="mono">Who Won? · Portfolio edition</div><h2 class="display">Choose your opponent</h2></div>
+  <div class="nameplate p1"><div class="mono">Player 1</div><div class="name display">Aashish</div><div class="sub">The Developer · CS @ UNT, Dec 2026</div></div>
+  <div class="nameplate p2"><div class="mono" id="p2kicker">Guards: Projects</div><div class="name display" id="p2name">Vajraveer</div><div class="sub" id="p2sub">The Endless Rush</div></div>
+  <div class="roster">
+    <div class="slots" id="slots"></div>
+    <div class="sel-info">
+      <div class="desc" id="selDesc"></div>
+      <div class="sel-actions" id="selActions"></div>
+    </div>
+  </div>
+</section>
+
+<!-- VS -->
+<section class="screen hidden" id="vs">
+  <div class="side l"><img id="vsL" alt="" /><div class="display" id="vsLName">Aashish</div><div class="mono" id="vsLSub">The Developer</div></div>
+  <div class="mid">VS</div>
+  <div class="side r"><img id="vsR" alt="" /><div class="display" id="vsRName"></div><div class="mono" id="vsRSub"></div></div>
+  <div class="stage mono" id="vsStage"></div>
+</section>
+
+<!-- Fight HUD -->
+<section class="screen hidden" id="hud">
+  <div class="bars">
+    <div class="bar-wrap l">
+      <div class="who"><img src="/play/busts/hero.webp" alt="" /><div><small>Player 1</small><b>Aashish</b></div></div>
+      <div class="bar" id="bar1"><i class="lag" id="lag1"></i><i class="hp" id="hp1"></i></div>
+    </div>
+    <div class="timer" id="timer">60</div>
+    <div class="bar-wrap r">
+      <div class="who"><img id="hud2img" alt="" /><div><small id="hud2sub"></small><b id="hud2name"></b></div></div>
+      <div class="bar" id="bar2"><i class="lag" id="lag2"></i><i class="hp" id="hp2"></i></div>
+    </div>
+  </div>
+  <div class="combo l" id="combo1"><b>0</b><span>hits</span></div>
+  <div class="combo r" id="combo2"><b>0</b><span>hits</span></div>
+  <div class="fight-tools"><button class="chip-btn" id="skipBtn">Skip fight →</button></div>
+  <div class="moves">
+    <div><kbd>A</kbd><kbd>D</kbd> move · <kbd>S</kbd> block</div>
+    <div><kbd>U</kbd> left punch · <kbd>I</kbd> right punch</div>
+    <div><kbd>J</kbd> left kick · <kbd>K</kbd> right kick</div>
+    <div><b>Combos:</b> U U → hook · U U I → uppercut · I I → haymaker</div>
+  </div>
+  <div class="announce"><div id="announce"></div></div>
+</section>
+
+<div class="touch">
+  <div class="pad dpad">
+    <button id="tL" aria-label="Move left">◀</button>
+    <button id="tB" aria-label="Block">⛨</button>
+    <button id="tR" aria-label="Move right">▶</button>
+  </div>
+  <div class="pad btns">
+    <button class="p" id="tLP">LP</button><button class="p" id="tRP">RP</button>
+    <button class="k" id="tLK">LK</button><button class="k" id="tRK">RK</button>
+  </div>
+</div>
+
+<!-- Results / section panels -->
+<section class="screen panel-screen hidden" id="result">
+  <div class="panel" id="resultPanel"></div>
+</section>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
+
+/* ================================================================ content */
+
+const tags = (l) => `<div class="tags">${l.map((t) => `<span>${t}</span>`).join("")}</div>`;
+const links = (l) => `<div class="links">${l.map(([t, h]) => `<a href="${h}" ${h.startsWith("mailto") ? "" : 'target="_blank" rel="noopener"'}>${t} ↗</a>`).join("")}</div>`;
+const list = (l) => `<ul>${l.map((t) => `<li>${t}</li>`).join("")}</ul>`;
+const entry = ({ k, t, img, video, html, wide }) =>
+  `<article class="entry${wide ? " wide" : ""}"><div class="k">${k}</div><h3>${t}</h3>${video || ""}${img ? `<img src="${img}" alt="" loading="lazy">` : ""}${html}</article>`;
+
+const CONTACT_LINKS = links([
+  ["Email", "mailto:aashishthapa700@gmail.com"],
+  ["LinkedIn", "https://www.linkedin.com/in/aashish-thapa-magar-09689a341/"],
+  ["GitHub", "https://github.com/AashishThapaMagar"],
+  ["Resume", "/Aashish_Thapa_Magar_Resume.pdf"],
+]);
+
+const SECTIONS = {
+  about: {
+    title: "Aashish", accent: "Thapa Magar", kicker: "Player 1 · Profile",
+    lede: "Computer Science student at the University of North Texas (graduating December 2026), based in Irving, Texas. I build backend services that hold up, AI products people can use, 3D games with real combat, and cinematic stories on screen.",
+    body: () => `<div class="facts">
+        <div><b>3.66</b><small>GPA at UNT · B.S. CS, Dec 2026</small></div>
+        <div><b>6</b><small>projects shipped</small></div>
+        <div><b>2</b><small>years in industry</small></div>
+        <div><b>2</b><small>awards won</small></div></div>
+      <div style="margin-top:16px">${CONTACT_LINKS}</div>`,
+  },
+  projects: {
+    title: "Projects", accent: "",
+    lede: "Six things I've built: AI, full-stack and civic tech.",
+    body: () => `<div class="entries">
+      ${entry({ k: "AI · 2026 · UNT Senior Design Award", t: "MYRA — AI Wardrobe Assistant", img: "/media/myra-poster.webp", html: `<p>Capstone that digitizes your closet and plans outfits from weather and calendar, with an AI tagging pipeline and 3D avatar try-on.</p>${list(["Won the UNT Senior Design Award with a 4-person team (QuadNet), sponsored by Dr. Stephanie Ludi.", "Computer-vision and LLM pipeline tags uploaded clothing automatically.", "React Native app, Node and FastAPI services, MongoDB Atlas, Cloudflare R2."])}${tags(["React Native", "FastAPI", "Node.js", "MongoDB", "OpenAI"])}${links([["Code", "https://github.com/cherry0722/Style-with-Ai"]])}` })}
+      ${entry({ k: "Civic tech · 2026", t: "FlashFlood Watch", html: `<p>A real-time flash-flood early-warning system on free public data. Alerts fire on how fast a river is rising, not only how high it is.</p>${list(["Polls USGS and Nepal DHM gauges; WATCH, WARNING and EMERGENCY levels from stage and rate of rise.", "Exports CAP 1.2 alerts and ships a FastAPI + Leaflet dashboard with an authorized manual-alert endpoint.", "Live on Render, with tests running in GitHub Actions."])}${tags(["Python", "FastAPI", "SQLite", "APScheduler", "Leaflet"])}${links([["Live demo", "https://flashflood-watch.onrender.com"], ["Code", "https://github.com/AashishThapaMagar/flashflood-watch"]])}` })}
+      ${entry({ k: "AI · 2025", t: "Soccer Video Understanding", html: `<p>Detects players, goalkeepers, referees and the ball in match footage, builds a per-second timeline, and answers questions about the game with a local LLM.</p>${list(["Fine-tuned a YOLO model on 372 images: 0.95 mAP@50 for players, 0.66 overall, about 20 ms a frame.", "Llama 3.2 on Ollama answers questions about the timeline, fully offline.", "Trained on a single GTX 1650; limits and lessons documented."])}${tags(["Python", "PyTorch", "YOLO", "OpenCV", "Ollama"])}${links([["Code", "https://github.com/AashishThapaMagar/video-understanding"]])}` })}
+      ${entry({ k: "Full-stack · 2025", t: "Mantix — AI Try-On Storefront", html: `<p>A streetwear storefront with an AI virtual try-on powered by fal.ai, deployed on Vercel.</p>${list(["Next.js storefront with clean product presentation.", "Virtual try-on generated with fal.ai."])}${tags(["Next.js", "TypeScript", "fal.ai", "Vercel"])}${links([["Live site", "https://mantix-ai-website.vercel.app/"], ["Code", "https://github.com/AashishThapaMagar/mantix-website"]])}` })}
+      ${entry({ k: "AI · 2026", t: "Echoes — Ambient AI", html: `<p>Describe a feeling and Echoes turns it into a cinematic video with ambient audio.</p>${list(["React and Vite front end with an Express API.", "Kling AI video generation and Web Audio API sound design."])}${tags(["React", "Vite", "Express", "Kling AI", "Web Audio"])}${links([["Code", "https://github.com/AashishThapaMagar/Echoes"]])}` })}
+      ${entry({ k: "Full-stack · 2026", t: "UNT Degree Audit", html: `<p>A student-built proposal to modernize degree audits for UNT's 46,000+ students: a visual player card, an AI advisor and a MyUNT portal mockup.</p>${list(["From weekend prototype to advising workspace with notes and downloadable summaries."])}${tags(["JavaScript", "HTML/CSS", "Claude API"])}${links([["Code", "https://github.com/AashishThapaMagar/UNT-degree-audit"]])}` })}
+    </div>`,
+  },
+  whowon: {
+    title: "Who Won?", accent: "",
+    lede: "The game these fighters come from: a 3D fighting game from Nepal's streets to the ring, designed and built end to end.",
+    body: () => `<div class="entries">
+      ${entry({ wide: true, k: "Game dev · Godot 4", t: "Who Won?", video: `<video src="/media/who-won-reel.mp4" poster="/media/who-won-reel-poster.webp" controls playsinline preload="none"></video>`, html: `<p>Seven playable fighters, Tekken-style four-button combos, a cinematic story mode set in Nepal, and a custom pipeline that turns AI-generated characters into fully rigged, animated fighters.</p>${tags(["Godot 4", "GDScript", "Blender", "Python", "Mixamo", "Git"])}${links([["Code", "https://github.com/AashishThapaMagar/Who-Won"]])}` })}
+      ${entry({ k: "Combat", t: "Four-button combat", img: "/media/ww-combo.webp", html: `<p>Left/right punch and left/right kick, with per-fighter move tables, strings, launchers, finishers and frame-timed hit detection. This page uses the same moves and impact timings.</p>` })}
+      ${entry({ k: "Pipeline & performance", t: "Under the hood", img: "/media/ww-vs.webp", html: list(["Python + Blender pipeline auto-rigs characters onto a shared skeleton, cleans skin weights, closes fists and exports T-poses for Mixamo animation packs.", "Profiled the renderer on integrated graphics and doubled the frame rate, from about 25 to 50 FPS, by trading MSAA for FXAA and simplifying scenery.", "29 automated test suites cover combat, combos, UI flow, story mode and the arenas."]) })}
+      ${entry({ wide: true, k: "By the numbers", t: "The roster", html: `<div class="facts"><div><b>7</b><small>fighters</small></div><div><b>4</b><small>button combos</small></div><div><b>50</b><small>FPS on integrated GPU</small></div><div><b>29</b><small>test suites</small></div></div>` })}
+    </div>`,
+  },
+  experience: {
+    title: "Experience", accent: "& skills",
+    lede: "Two years shipping software in industry, and the tools I reach for.",
+    body: () => `<div class="entries">
+      ${entry({ wide: true, k: "Jan 2021 – Jan 2023 · Kathmandu, Nepal", t: "Software Developer Intern — Visa Success Connect", html: list(["Built and maintained backend services in Python and Java that streamlined client data management.", "Shipped full-stack web features with a cross-functional team, lifting client engagement by 25%.", "Debugged and optimized legacy code, cutting system errors by 15%."]) })}
+      ${entry({ k: "Languages", t: "Languages", html: tags(["Python", "Java", "TypeScript", "JavaScript", "GDScript", "C / C++", "SQL"]) })}
+      ${entry({ k: "Backend & APIs", t: "Backend & APIs", html: tags(["FastAPI", "Django", "Node.js", "Express", "REST", "MongoDB", "SQLite"]) })}
+      ${entry({ k: "Frontend & Mobile", t: "Frontend & Mobile", html: tags(["React", "Next.js", "React Native", "Vite", "HTML / CSS"]) })}
+      ${entry({ k: "AI & Vision", t: "AI & Vision", html: tags(["YOLO", "OpenCV", "PyTorch", "LLM integration", "Ollama", "Prompt engineering"]) })}
+      ${entry({ k: "Tools & Platforms", t: "Tools & Platforms", html: tags(["Git / GitHub", "GitHub Actions", "Linux / WSL2", "Vercel", "Render", "VS Code"]) })}
+      ${entry({ k: "Games & Creative", t: "Games & Creative", html: tags(["Godot", "Blender", "Mixamo", "Directing", "DaVinci Resolve", "Colour grading"]) })}
+    </div>`,
+  },
+  cinema: {
+    title: "Cinema", accent: "",
+    lede: "I direct and edit short films end to end, and edit and colour grade them in DaVinci Resolve.",
+    body: () => `<div class="entries">
+      ${entry({ k: "Golden Lion International Film Festival · 2026", t: "Best Micro Short Film", img: "/media/the-wait.webp", html: `<p>Winner for <i>The Wait</i>, a short film I directed and edited.</p>` })}
+      ${entry({ k: "Festivals", t: "Official selections", html: list(["CKF International Film Festival — Official Selection", "Lift-Off First-Time Filmmaker Sessions, Vol. 11 — Official Selection"]) + `<p>Directing, editing and colour grading end to end.</p>${tags(["Directing", "Editing", "DaVinci Resolve", "Colour grading"])}` })}
+    </div>`,
+  },
+  contact: {
+    title: "Let's", accent: "talk.", kicker: "Continue?",
+    lede: "I'm graduating in December 2026 and looking for software and game roles.",
+    body: () => CONTACT_LINKS,
+  },
+};
+
+/* ================================================================ roster */
+
+// [start, impact, end] in clip seconds, from Who Won?'s fighter_models.gd.
+const T_ISH = { jab: [0.25, 0.57, 0.95], cross: [0.75, 1.13, 1.6], hook: [0.1, 0.4, 0.85], uppercut: [0.15, 0.47, 1.0], heavy: [0.3, 0.63, 1.5], kick: [0.3, 0.67, 1.2], kick_spin: [0.45, 0.97, 1.5] };
+const ROSTER = {
+  hero: { name: "Aashish", title: "The Developer", file: "hero", height: 1.75, forward: "x", timing: T_ISH },
+  bib: {
+    name: "Vajraveer", title: "The Endless Rush", file: "bib", height: 1.7, forward: "z", section: "projects", arena: "lantern-square", stage: "Lantern Square",
+    speed: 1.1, aggression: 0.55, blockChance: 0.2,
+    timing: { jab: [0.17, 0.47, 0.92], cross: [0.37, 0.67, 1.12], hook: [0.17, 0.47, 0.95], uppercut: [0.4, 0.7, 1.15], heavy: [0.37, 0.67, 1.15], kick: [0.42, 0.77, 1.3], kick_spin: [0.35, 0.7, 1.3] },
+  },
+  ish: {
+    name: "Agasthya", title: "The Flash Hammer", file: "ish", height: 1.8, forward: "z", section: "whowon", arena: "heritage-square", stage: "Heritage Square",
+    speed: 1.16, aggression: 0.6, blockChance: 0.25, timing: T_ISH,
+  },
+  abhi: {
+    name: "Kri", title: "The Loud Thunder", file: "abhi", height: 1.82, forward: "z", section: "experience", arena: "terrace-overlook", stage: "Terrace Overlook",
+    speed: 1.0, aggression: 0.65, blockChance: 0.3,
+    timing: { jab: [0.3, 0.57, 0.95], cross: [0.15, 0.37, 0.8], hook: [0.25, 0.57, 1.1], uppercut: [0.15, 0.4, 1.0], heavy: [0.1, 0.33, 0.9], kick: [0.35, 0.67, 1.3], kick_spin: [0.7, 1.0, 1.7] },
+  },
+  anant: {
+    name: "Ananta", title: "The Final Word", file: "anant", height: 1.86, forward: "z", section: "cinema", arena: "moonlit-stupa", stage: "Moonlit Stupa", boss: true,
+    speed: 1.12, aggression: 0.75, blockChance: 0.4,
+    timing: { jab: [0.25, 0.57, 0.95], cross: [0.75, 1.13, 1.6], hook: [0.1, 0.4, 0.85], uppercut: [0.15, 0.47, 1.0], heavy: [0.3, 0.63, 1.5], kick: [0.35, 0.73, 1.3], kick_spin: [0.45, 0.97, 1.5] },
+  },
+};
+const OPPONENTS = ["bib", "ish", "abhi", "anant"];
+
+const MOVES = {
+  jab: { dmg: 5, reach: 1.05, react: "hit_head", push: 0.12 },
+  cross: { dmg: 7, reach: 1.1, react: "hit_head", push: 0.18 },
+  hook: { dmg: 8, reach: 1.0, react: "hit_head", push: 0.2 },
+  uppercut: { dmg: 11, reach: 1.0, react: "hit_head", push: 0.3 },
+  heavy: { dmg: 13, reach: 1.1, react: "hit_body", push: 0.35 },
+  kick: { dmg: 8, reach: 1.35, react: "hit_body", push: 0.25 },
+  kick_spin: { dmg: 11, reach: 1.4, react: "hit_body", push: 0.4 },
+};
+
+/* ================================================================ storage */
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+const unlocked = new Set(store.get("ap-unlocked", []));
+
+/* ================================================================ renderer */
+
+const canvas = document.getElementById("game");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x8fb3d9);
+scene.fog = new THREE.Fog(0x9fbfe0, 40, 160);
+const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 600);
+
+const hemi = new THREE.HemisphereLight(0xfff1dc, 0x4a3a55, 1.6);
+const sun = new THREE.DirectionalLight(0xffe6c2, 2.6);
+sun.position.set(-4, 9, 7);
+sun.castShadow = true;
+sun.shadow.mapSize.set(1024, 1024);
+Object.assign(sun.shadow.camera, { left: -5, right: 5, top: 5, bottom: -2, near: 1, far: 30 });
+sun.shadow.bias = -0.0004;
+scene.add(hemi, sun, sun.target);
+
+function resize() {
+  const w = window.innerWidth, h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener("resize", resize);
+resize();
+
+/* ================================================================ loading */
+
+const loader = new GLTFLoader();
+const cache = new Map();
+function loadGLB(url) {
+  if (!cache.has(url)) cache.set(url, loader.loadAsync(url));
+  return cache.get(url);
+}
+
+let arena = null, arenaName = null;
+async function setArena(name) {
+  if (arenaName === name) return;
+  arenaName = name;
+  const g = await loadGLB(`/play/arenas/${name}.glb`);
+  if (arenaName !== name) return;
+  if (arena) scene.remove(arena);
+  arena = g.userData.merged ||= mergeStatic(g.scene);
+  scene.add(arena);
+  const night = name === "moonlit-stupa" || name === "lantern-square";
+  scene.background.set(night ? 0x1d2440 : 0x8fb3d9);
+  scene.fog.color.set(night ? 0x1d2440 : 0x9fbfe0);
+  hemi.intensity = night ? 1.0 : 1.6;
+  sun.color.set(night ? 0xb9c8ff : 0xffe6c2);
+  sun.intensity = night ? 1.8 : 2.6;
+}
+
+// The arenas are ~600 small meshes; merging them by material cuts draw calls to a few dozen.
+function mergeStatic(root) {
+  root.updateMatrixWorld(true);
+  const groups = new Map();
+  root.traverse((o) => {
+    if (!o.isMesh || o.isSkinnedMesh || Array.isArray(o.material)) return;
+    const g = o.geometry.index ? o.geometry.toNonIndexed() : o.geometry.clone();
+    g.applyMatrix4(o.matrixWorld);
+    for (const name of Object.keys(g.attributes)) if (!["position", "normal", "uv", "color"].includes(name)) g.deleteAttribute(name);
+    if (!g.attributes.normal) g.computeVertexNormals();
+    const key = o.material.uuid + "|" + Object.keys(g.attributes).sort().join(",");
+    if (!groups.has(key)) groups.set(key, { mat: o.material, geos: [] });
+    groups.get(key).geos.push(g);
+  });
+  const out = new THREE.Group();
+  for (const { mat, geos } of groups.values()) {
+    const merged = mergeGeometries(geos, false);
+    if (!merged) continue;
+    const m = new THREE.Mesh(merged, mat);
+    m.receiveShadow = true;
+    out.add(m);
+  }
+  return out;
+}
+
+/* ================================================================ fighters */
+
+// Mixamo/Tripo hips tracks: "up" is whichever axis holds the rest height. Removing the
+// straight-line drift on the other two keeps clips in place while preserving sway.
+function inPlace(clip) {
+  const track = clip.tracks.find((t) => /hips\.position$/i.test(t.name));
+  if (!track) return;
+  const v = track.values, t = track.times, n = t.length;
+  const abs = [0, 1, 2].map((i) => Math.abs(v[i]));
+  const up = abs.indexOf(Math.max(...abs));
+  const T = t[n - 1] - t[0] || 1;
+  for (let axis = 0; axis < 3; axis++) {
+    if (axis === up) continue;
+    const a = v[axis], b = v[(n - 1) * 3 + axis];
+    for (let i = 0; i < n; i++) v[i * 3 + axis] = v[i * 3 + axis] - a - (b - a) * ((t[i] - t[0]) / T);
+  }
+}
+
+class Fighter {
+  constructor(id, gltf) {
+    this.id = id;
+    this.def = ROSTER[id];
+    const model = gltf.scene;
+    model.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.frustumCulled = false; } });
+    const box = new THREE.Box3().setFromObject(model);
+    const s = this.def.height / box.getSize(new THREE.Vector3()).y;
+    model.scale.setScalar(s);
+    box.setFromObject(model);
+    model.position.y -= box.min.y;
+    // Normalise every model so "forward" is +X before facing is applied.
+    this.base = new THREE.Group();
+    this.base.add(model);
+    this.base.rotation.y = this.def.forward === "z" ? Math.PI / 2 : 0;
+    this.root = new THREE.Group();
+    this.root.add(this.base);
+    this.mixer = new THREE.AnimationMixer(model);
+    this.actions = {};
+    for (const clip of gltf.animations) {
+      const c = clip.clone();
+      inPlace(c);
+      this.actions[c.name] = this.mixer.clipAction(c);
+    }
+    this.current = null;
+    this.reset(0, 1);
+  }
+  reset(x, facing) {
+    this.x = x; this.facing = facing;
+    this.hp = 100; this.state = "idle"; this.stun = 0;
+    this.attack = null; this.combo = 0;
+    this.blocking = false; this.string = []; this.stringTimer = 0;
+    this.root.rotation.y = facing > 0 ? -0.38 : Math.PI + 0.38;
+    this.play("idle", 0, { force: true });
+  }
+  play(name, fade = 0.12, { once = false, from = 0, speed = 1, force = false } = {}) {
+    const a = this.actions[name];
+    if (!a) return null;
+    if (this.current === name && !once && !force) { a.timeScale = speed; return a; }
+    const prev = this.current && this.actions[this.current];
+    a.reset();
+    a.setLoop(once ? THREE.LoopOnce : THREE.LoopRepeat);
+    a.clampWhenFinished = once;
+    a.time = from;
+    a.timeScale = speed;
+    a.enabled = true;
+    a.setEffectiveWeight(1);
+    a.play();
+    if (prev && prev !== a && fade > 0) prev.crossFadeTo(a, fade, false);
+    else if (prev && prev !== a) prev.stop();
+    this.current = name;
+    return a;
+  }
+  update(dt) {
+    this.mixer.update(dt);
+    this.root.position.x = this.x;
+    // 3/4 view: turn a little toward the camera, like a fighting game.
+    const target = this.facing > 0 ? -0.38 : Math.PI + 0.38;
+    let d = target - this.root.rotation.y;
+    d = Math.atan2(Math.sin(d), Math.cos(d));
+    this.root.rotation.y += d * Math.min(1, dt * 12);
+  }
+}
+
+/* ================================================================ input */
+
+const keys = {};
+const pressed = [];
+const KEYMAP = { KeyU: "LP", KeyI: "RP", KeyJ: "LK", KeyK: "RK", KeyZ: "LP", KeyX: "RP", KeyC: "LK", KeyV: "RK" };
+window.addEventListener("keydown", (e) => {
+  if (mode === "fight" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", " "].includes(e.key)) e.preventDefault();
+  if (!e.repeat && KEYMAP[e.code] && mode === "fight") pressed.push(KEYMAP[e.code]);
+  keys[e.code] = true;
+  if (e.code === "Escape" && mode === "result") backToSelect();
+});
+window.addEventListener("keyup", (e) => (keys[e.code] = false));
+window.addEventListener("blur", () => { for (const k in keys) keys[k] = false; });
+
+const touch = { L: false, R: false, B: false };
+function hold(id, key) {
+  const el = document.getElementById(id);
+  el.addEventListener("pointerdown", (e) => { e.preventDefault(); el.setPointerCapture(e.pointerId); touch[key] = true; });
+  for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) el.addEventListener(ev, () => (touch[key] = false));
+}
+hold("tL", "L"); hold("tR", "R"); hold("tB", "B");
+for (const b of ["LP", "RP", "LK", "RK"]) {
+  document.getElementById("t" + b).addEventListener("pointerdown", (e) => { e.preventDefault(); if (mode === "fight") pressed.push(b); });
+}
+
+/* ================================================================ audio */
+
+let actx = null;
+function ctx() { try { return (actx ||= new (window.AudioContext || window.webkitAudioContext)()); } catch { return null; } }
+function tone(freq, dur, type = "square", vol = 0.04, slide = 0) {
+  const a = ctx(); if (!a) return;
+  const o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.value = freq;
+  if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, a.currentTime + dur);
+  g.gain.setValueAtTime(vol, a.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, a.currentTime + dur);
+  o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + dur);
+}
+function thud(vol = 0.25, cut = 900) {
+  const a = ctx(); if (!a) return;
+  const len = Math.floor(a.sampleRate * 0.12), buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+  const src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+  src.buffer = buf; f.type = "lowpass"; f.frequency.value = cut; g.gain.value = vol;
+  src.connect(f).connect(g).connect(a.destination); src.start();
+  tone(120, 0.12, "sine", vol * 0.5, 0.5);
+}
+const sfx = {
+  whoosh: () => tone(500, 0.08, "triangle", 0.015, 0.4),
+  hit: (heavy) => thud(heavy ? 0.4 : 0.25, heavy ? 700 : 1200),
+  block: () => tone(900, 0.06, "square", 0.03, 0.7),
+  ko: () => { thud(0.5, 500); tone(220, 0.6, "sawtooth", 0.04, 0.3); },
+  select: () => tone(880, 0.05, "square", 0.03),
+  fight: () => [523, 784].forEach((f, i) => setTimeout(() => tone(f, 0.16, "square", 0.04), i * 110)),
+};
+
+/* ================================================================ screens */
+
+const $ = (id) => document.getElementById(id);
+let mode = "title";
+function show(id) {
+  for (const s of ["title", "select", "vs", "hud", "result"]) $(s).classList.toggle("hidden", s !== id);
+  $("hud").classList.toggle("on", id === "hud");
+  document.body.dataset.screen = id;
+}
+
+let hero = null, foe = null;
+let selected = "bib";
+const made = {};
+
+function slotsHTML() {
+  const slots = [
+    { id: "about", img: "/play/busts/hero.webp", name: "Aashish", sub: "Profile" },
+    ...OPPONENTS.map((id) => ({ id, img: `/play/busts/${id}.webp`, name: ROSTER[id].name, sub: SECTIONS[ROSTER[id].section].title })),
+    { id: "contact", name: "Contact", sub: "Hire me", ico: "@" },
+  ];
+  return slots.map((s) => {
+    const section = ROSTER[s.id]?.section;
+    const badge = section ? (unlocked.has(section) ? `<span class="badge done">✓ Unlocked</span>` : `<span class="badge">Fight</span>`) : "";
+    const pic = s.ico ? `<div class="contact-ico">${s.ico}</div>` : `<img src="${s.img}" alt="">`;
+    return `<button class="slot${selected === s.id ? " active" : ""}" data-id="${s.id}">${badge}${pic}<div class="label"><b>${s.name}</b><small>${s.sub}</small></div></button>`;
+  }).join("");
+}
+
+function renderSelect() {
+  $("slots").innerHTML = slotsHTML();
+  for (const b of $("slots").querySelectorAll(".slot")) b.addEventListener("click", () => pick(b.dataset.id));
+  const r = ROSTER[selected];
+  if (r && r.section) {
+    const sec = SECTIONS[r.section];
+    $("p2kicker").textContent = `Guards: ${sec.title}${r.boss ? " · Final boss" : ""}`;
+    $("p2name").textContent = r.name;
+    $("p2sub").textContent = `${r.title} · ${r.stage}`;
+    $("selDesc").innerHTML = `<b>${r.name}</b> guards <b>${sec.title}</b>. ${sec.lede}`;
+    $("selActions").innerHTML = `<button class="act" id="viewBtn">${unlocked.has(r.section) ? "View" : "Skip & view"}</button><button class="act primary" id="fightBtn">Fight</button>`;
+    $("viewBtn").onclick = () => openSection(r.section);
+    $("fightBtn").onclick = () => startFight(selected);
+  } else {
+    const sec = SECTIONS[selected];
+    $("p2kicker").textContent = selected === "about" ? "Player 1" : "Continue?";
+    $("p2name").textContent = selected === "about" ? "Profile" : "Contact";
+    $("p2sub").textContent = "";
+    $("selDesc").innerHTML = sec.lede;
+    $("selActions").innerHTML = `<button class="act primary" id="openBtn">Open</button>`;
+    $("openBtn").onclick = () => openSection(selected);
+  }
+}
+
+async function pick(id) {
+  if (selected !== id) sfx.select();
+  selected = id;
+  renderSelect();
+  if (ROSTER[id]) await placeSelectFoe(id);
+  else if (foe) { scene.remove(foe.root); foe = null; }
+}
+
+async function getFighter(id) {
+  if (made[id]) return made[id];
+  const g = await loadGLB(`/play/fighters/${ROSTER[id].file}.glb`);
+  return (made[id] ||= new Fighter(id, g));
+}
+
+async function placeSelectFoe(id) {
+  const f = await getFighter(id);
+  if (selected !== id || mode !== "select") return;
+  if (foe && foe !== f) scene.remove(foe.root);
+  foe = f;
+  foe.reset(1.1, -1);
+  foe.play("taunt", 0.2, { once: true });
+  foe.afterTaunt = true;
+  scene.add(foe.root);
+}
+
+function goSelect() {
+  mode = "select";
+  show("select");
+  setArena("heritage-square");
+  hero.reset(-1.1, 1);
+  if (!hero.root.parent) scene.add(hero.root);
+  pick(selected);
+}
+
+function openSection(id, won = false) {
+  const sec = SECTIONS[id];
+  const guard = OPPONENTS.find((o) => ROSTER[o].section === id);
+  const kicker = !guard ? sec.kicker
+    : won ? `Defeated ${ROSTER[guard].name} · ${ROSTER[guard].boss ? "Final section" : "Section"} unlocked`
+    : `Guarded by ${ROSTER[guard].name}${unlocked.has(id) ? " · Unlocked" : ""}`;
+  const accent = won && !sec.accent ? "unlocked" : sec.accent;
+  mode = "result";
+  fight.on = false;
+  show("result");
+  const next = OPPONENTS.find((o) => !unlocked.has(ROSTER[o].section));
+  const allDone = OPPONENTS.every((o) => unlocked.has(ROSTER[o].section));
+  $("resultPanel").innerHTML = `
+    <div class="kicker mono">${kicker}</div>
+    <h2 class="display">${sec.title} <span>${accent}</span></h2>
+    <p class="lede">${sec.lede}</p>
+    ${sec.body()}
+    ${allDone && id !== "contact" && id !== "about" ? `<p class="lede" style="margin-top:20px">All four fighters beaten. Thanks for playing — let's talk.</p>${CONTACT_LINKS}` : ""}
+    <div class="panel-actions">
+      <button class="big-btn" id="backBtn">Back to select</button>
+      ${next ? `<button class="ghost-btn" id="nextBtn">Next fight: ${ROSTER[next].name} →</button>` : ""}
+    </div>`;
+  $("resultPanel").scrollTop = 0;
+  $("backBtn").onclick = backToSelect;
+  if ($("nextBtn")) $("nextBtn").onclick = () => { selected = next; startFight(next); };
+}
+
+function backToSelect() {
+  for (const v of document.querySelectorAll("video")) v.pause();
+  goSelect();
+}
+
+/* ================================================================ fight flow */
+
+const fight = { on: false, timer: 60, lock: 0, over: false, slow: 1, hitstop: 0, shake: 0 };
+const timers = [];
+function later(fn, ms) { timers.push(setTimeout(fn, ms)); }
+function clearLater() { while (timers.length) clearTimeout(timers.pop()); }
+
+async function startFight(id) {
+  clearLater();
+  mode = "vs";
+  const r = ROSTER[id];
+  $("vsL").src = "/play/busts/hero.webp";
+  $("vsR").src = `/play/busts/${id}.webp`;
+  $("vsRName").textContent = r.name;
+  $("vsRSub").textContent = r.title;
+  $("vsStage").textContent = `Stage: ${r.stage}${r.boss ? " · Final boss" : ""}`;
+  show("vs");
+  $("vs").classList.remove("anim"); void $("vs").offsetWidth; $("vs").classList.add("anim");
+  sfx.fight();
+  const minWait = new Promise((res) => setTimeout(res, 1900));
+  const [f] = await Promise.all([getFighter(id), setArena(r.arena), minWait]);
+  if (mode !== "vs") return;
+  if (foe && foe !== f) scene.remove(foe.root);
+  foe = f;
+  scene.add(foe.root);
+  if (!hero.root.parent) scene.add(hero.root);
+  hero.reset(-1.3, 1);
+  foe.reset(1.3, -1);
+  foe.afterTaunt = false;
+  Object.assign(fight, { on: true, timer: 60, lock: 1.7, over: false, slow: 1, hitstop: 0, shake: 0 });
+  Object.assign(ai, { think: 0.8, plan: null });
+  $("hud2img").src = `/play/busts/${id}.webp`;
+  $("hud2name").textContent = r.name;
+  $("hud2sub").textContent = `Guards ${SECTIONS[r.section].title}`;
+  $("timer").textContent = "60";
+  updateBars(true);
+  mode = "fight";
+  show("hud");
+  pressed.length = 0;
+  announce("Round 1", false);
+  later(() => { announce("Fight!", true); sfx.fight(); }, 900);
+  later(() => { if (!fight.over) announce(""); }, 1700);
+}
+
+function announce(text, gold) {
+  const el = $("announce");
+  el.className = "";
+  void el.offsetWidth;
+  el.textContent = text;
+  el.className = (gold ? "gold " : "") + (text ? "pop" : "");
+}
+
+function updateBars(instant) {
+  for (const [f, n] of [[hero, 1], [foe, 2]]) {
+    const w = Math.max(0, f.hp) + "%";
+    $("hp" + n).style.width = w;
+    const lag = $("lag" + n);
+    if (instant) { lag.style.transition = "none"; lag.style.width = w; void lag.offsetWidth; lag.style.transition = ""; }
+    else lag.style.width = w;
+    $("bar" + n).classList.toggle("low", f.hp < 30);
+  }
+}
+
+function showCombo(f, n) {
+  const el = $(f === hero ? "combo1" : "combo2");
+  if (n < 2) return;
+  el.querySelector("b").textContent = n;
+  el.classList.add("show");
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove("show"), 1100);
+}
+
+$("skipBtn").onclick = () => { clearLater(); fight.on = false; openSection(ROSTER[foe.id].section); };
+
+/* ---------------------------------------------------------------- combat */
+
+// Strings: the last presses decide the move (U U -> hook, U U I -> uppercut, I I -> haymaker).
+function moveFor(f, button) {
+  const s = [...f.string, button].join(" ");
+  if (s.endsWith("LP LP RP")) return "uppercut";
+  if (s.endsWith("LP LP")) return "hook";
+  if (s.endsWith("RP RP")) return "heavy";
+  return { LP: "jab", RP: "cross", LK: "kick", RK: "kick_spin" }[button];
+}
+
+function startAttack(f, button) {
+  const move = moveFor(f, button);
+  const t = f.def.timing[move] || T_ISH[move];
+  f.state = "attack";
+  f.blocking = false;
+  f.attack = { move, t, hit: false };
+  f.play(move, 0.06, { once: true, from: t[0], speed: 1.15 });
+  f.string.push(button);
+  f.string = f.string.slice(-3);
+  f.stringTimer = 0.9;
+  sfx.whoosh();
+}
+
+// The visitor should be able to win: the AI hits softer than the player.
+function dmgScale(att) { return att === hero ? 1 : (ROSTER[foe.id].boss ? 0.7 : 0.55); }
+
+function resolveHit(att, def) {
+  const m = MOVES[att.attack.move];
+  const dir = Math.sign(def.x - att.x) || att.facing;
+  if (Math.abs(att.x - def.x) > m.reach || def.state === "ko" || dir !== att.facing) return;
+  // Holding block while facing the attacker stops most of it.
+  if (def.blocking && def.facing === -dir) {
+    def.hp -= m.dmg * 0.15 * dmgScale(att);
+    def.x += dir * m.push * 0.6;
+    def.play("block_hit", 0.05, { once: true, from: 0.1 });
+    def.stun = 0.25;
+    sfx.block();
+    spark(def, 0x9fd8ff);
+    fight.hitstop = 0.04;
+    updateBars();
+    return;
+  }
+  def.hp -= m.dmg * dmgScale(att);
+  def.x += dir * m.push;
+  att.combo = def.state === "hit" ? att.combo + 1 : 1;
+  showCombo(att, att.combo);
+  def.attack = null;
+  def.blocking = false;
+  fight.hitstop = m.dmg >= 10 ? 0.11 : 0.07;
+  fight.shake = m.dmg >= 10 ? 0.18 : 0.1;
+  sfx.hit(m.dmg >= 10);
+  spark(def, 0xffd36b);
+  updateBars();
+  if (def.hp <= 0) return knockOut(att, def);
+  def.state = "hit";
+  def.stun = m.dmg >= 10 ? 0.6 : 0.42;
+  def.play(m.react, 0.05, { once: true, from: 0.05, speed: 1.2 });
+}
+
+function knockOut(winner, loser) {
+  if (fight.over) return;
+  loser.state = "ko";
+  loser.hp = Math.max(0, loser.hp);
+  loser.attack = null;
+  loser.play("ko", 0.08, { once: true });
+  winner.attack = null;
+  winner.state = "idle";
+  winner.play("idle", 0.2);
+  fight.over = true;
+  fight.slow = 0.35;
+  sfx.ko();
+  announce(loser.hp <= 0 ? "K.O." : "Time!", true);
+  updateBars();
+  later(() => {
+    fight.slow = 1;
+    winner.state = "victory";
+    winner.play("victory", 0.25, { once: true });
+  }, 1100);
+  later(() => endFight(winner === hero), 3400);
+}
+
+function endFight(won) {
+  if (!fight.on) return;
+  fight.on = false;
+  const section = ROSTER[foe.id].section;
+  if (won) {
+    unlocked.add(section);
+    store.set("ap-unlocked", [...unlocked]);
+    openSection(section, true);
+  } else {
+    // Losing never hides content: show it with a rematch option.
+    openSection(section);
+    $("resultPanel").querySelector(".kicker").textContent = `${ROSTER[foe.id].name} won this round · Here's the section anyway`;
+    const again = document.createElement("button");
+    again.className = "ghost-btn";
+    again.textContent = "Rematch";
+    const id = foe.id;
+    again.onclick = () => startFight(id);
+    $("resultPanel").querySelector(".panel-actions").prepend(again);
+  }
+}
+
+/* ---------------------------------------------------------------- sparks */
+
+const sparks = [];
+const sparkGeo = new THREE.SphereGeometry(0.05, 6, 4);
+function spark(def, color) {
+  const mat = new THREE.MeshBasicMaterial({ color, transparent: true });
+  for (let i = 0; i < 10; i++) {
+    const m = new THREE.Mesh(sparkGeo, mat);
+    m.position.set(def.x - def.facing * 0.2, 1.25 + (Math.random() - 0.5) * 0.3, 0.2);
+    const a = Math.random() * Math.PI * 2;
+    sparks.push({ m, vx: Math.cos(a) * 3.5, vy: Math.sin(a) * 3.5 + 1, life: 0.3 });
+    scene.add(m);
+  }
+}
+
+/* ---------------------------------------------------------------- per-frame logic */
+
+function control(f, other, dt, intent) {
+  f.stringTimer -= dt;
+  if (f.stringTimer <= 0) f.string = [];
+  if (f.state !== "attack") f.facing = other.x >= f.x ? 1 : -1;
+
+  if (f.state === "ko" || f.state === "victory") return;
+
+  if (f.state === "hit") {
+    f.stun -= dt;
+    if (f.stun <= 0) { f.state = "idle"; f.play("idle", 0.2); }
+    return;
+  }
+
+  if (f.state === "attack") {
+    const a = f.actions[f.attack.move];
+    const t = a ? a.time : f.attack.t[2];
+    if (!f.attack.hit && t >= f.attack.t[1]) {
+      f.attack.hit = true;
+      resolveHit(f, other);
+      if (fight.over) return;
+    }
+    // Presses after the impact frame chain into the next move of the string.
+    if (f.attack && f.attack.hit && intent.attack && t >= f.attack.t[1] + 0.05) { startAttack(f, intent.attack); return; }
+    if (f.attack && f.attack.hit && intent.attack) f.buffered = intent.attack;
+    if (f.attack && t >= f.attack.t[2]) {
+      f.attack = null;
+      if (f.buffered) { const b = f.buffered; f.buffered = null; startAttack(f, b); return; }
+      f.state = "idle";
+      f.play("idle", 0.18);
+    }
+    return;
+  }
+  f.buffered = null;
+
+  if (f.stun > 0) { f.stun -= dt; return; }
+
+  if (intent.attack) { startAttack(f, intent.attack); return; }
+
+  f.blocking = !!intent.block;
+  if (f.blocking) {
+    f.state = "block";
+    if (f.current !== "block" && f.current !== "block_hit") f.play("block", 0.1, { once: true, from: 0.15 });
+    const a = f.actions.block;
+    if (a && f.current === "block" && a.time > 0.55) a.time = 0.55; // hold the guard up
+    return;
+  }
+
+  const move = intent.move || 0;
+  const forward = move * f.facing > 0;
+  f.x += move * (forward ? 1.7 : 1.4) * (f.def.speed || 1) * dt;
+  if (move) {
+    f.state = "walk";
+    // The packs only have a backward walk; play it in reverse to step forward.
+    f.play("walk_back", 0.12, { speed: forward ? -1 : 1 });
+  } else if (f.state !== "idle") {
+    f.state = "idle";
+    f.play("idle", 0.18);
+  }
+}
+
+function heroIntent() {
+  const left = keys.KeyA || keys.ArrowLeft || touch.L;
+  const right = keys.KeyD || keys.ArrowRight || touch.R;
+  return {
+    move: (right ? 1 : 0) - (left ? 1 : 0),
+    block: keys.KeyS || keys.ArrowDown || touch.B,
+    attack: pressed.shift() || null,
+  };
+}
+
+const ai = { think: 0, plan: null };
+function foeIntent(dt) {
+  const r = ROSTER[foe.id];
+  const dist = Math.abs(hero.x - foe.x);
+  ai.think -= dt;
+  // React to the player's swings with a guard sometimes.
+  if (hero.state === "attack" && hero.attack && !hero.attack.hit && dist < 1.5 && foe.state !== "attack" && !ai.plan?.block && Math.random() < r.blockChance * dt * 5) {
+    ai.plan = { block: 0.55 };
+  }
+  if (ai.plan?.block > 0) { ai.plan.block -= dt; return { block: true }; }
+  if (ai.think <= 0) {
+    ai.think = 0.4 + Math.random() * 0.5;
+    if (dist > 1.15) ai.plan = { move: 1 };
+    else if (Math.random() < r.aggression) {
+      const opts = ["LP", "LP", "RP", "LK", "RK"];
+      ai.plan = { attack: opts[Math.floor(Math.random() * opts.length)], follow: Math.random() < 0.35 ? "LP" : null };
+    } else ai.plan = { move: Math.random() < 0.5 ? -1 : 0 };
+  }
+  const p = ai.plan || {};
+  if (p.attack) {
+    const a = p.attack;
+    p.attack = p.follow; p.follow = null;
+    return { attack: a };
+  }
+  if (p.move === 1) return { move: hero.x > foe.x ? 1 : -1 };
+  if (p.move === -1) return { move: hero.x > foe.x ? -1 : 1 };
+  return {};
+}
+
+function stepFight(dt) {
+  if (fight.lock > 0) { fight.lock -= dt; pressed.length = 0; return; }
+  if (!fight.over) {
+    fight.timer -= dt;
+    $("timer").textContent = Math.max(0, Math.ceil(fight.timer));
+    if (fight.timer <= 0) {
+      const heroWins = hero.hp >= foe.hp;
+      knockOut(heroWins ? hero : foe, heroWins ? foe : hero);
+      return;
+    }
+  }
+  control(hero, foe, dt, fight.over ? {} : heroIntent());
+  control(foe, hero, dt, fight.over ? {} : foeIntent(dt));
+  // Keep fighters apart and on the stage.
+  const minGap = 0.7;
+  const gap = foe.x - hero.x;
+  if (Math.abs(gap) < minGap) {
+    const push = ((minGap - Math.abs(gap)) / 2) * (Math.sign(gap) || 1);
+    hero.x -= push; foe.x += push;
+  }
+  hero.x = THREE.MathUtils.clamp(hero.x, -4.5, 4.5);
+  foe.x = THREE.MathUtils.clamp(foe.x, -4.5, 4.5);
+}
+
+/* ================================================================ loop */
+
+const clock = new THREE.Clock();
+const camPos = new THREE.Vector3(0, 2.2, 8);
+const camLook = new THREE.Vector3(0, 1.2, 0);
+const tmpA = new THREE.Vector3(), tmpB = new THREE.Vector3();
+const STEP = 1 / 60;
+let acc = 0;
+function frame() {
+  const real = Math.min(clock.getDelta(), 0.25);
+  // Fixed 60 Hz steps: impacts land on the same frames whatever the display rate.
+  acc += real;
+  while (acc >= STEP) {
+    acc -= STEP;
+    let dt = STEP;
+    if (mode === "fight" && fight.on) {
+      if (fight.hitstop > 0) { fight.hitstop -= STEP; dt = 0; }
+      dt *= fight.slow;
+      stepFight(dt);
+    } else if (mode === "select" && foe && foe.afterTaunt) {
+      const a = foe.actions.taunt;
+      if (!a || a.time >= a.getClip().duration - 0.05) { foe.afterTaunt = false; foe.play("idle", 0.3); }
+    }
+    if (hero) hero.update(dt);
+    if (foe) foe.update(dt);
+  }
+
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.life -= real; s.vy -= 9 * real;
+    s.m.position.x += s.vx * real; s.m.position.y += s.vy * real;
+    s.m.scale.setScalar(Math.max(0.01, s.life / 0.3));
+    if (s.life <= 0) { scene.remove(s.m); sparks.splice(i, 1); }
+  }
+
+  // Camera: frame both fighters; pull back on narrow screens.
+  const t = clock.elapsedTime;
+  const portrait = camera.aspect < 1;
+  if (mode === "title") {
+    tmpA.set(Math.sin(t * 0.15) * 3, 1.9, (6.5 + Math.cos(t * 0.15) * 1.2) * (portrait ? 1.6 : 1));
+    tmpB.set(hero ? hero.x : 0, 1.1, 0);
+  } else {
+    const a = hero ? hero.x : 0, b = foe ? foe.x : a;
+    const mid = (a + b) / 2;
+    const spread = Math.abs(a - b);
+    const z = Math.max(4.8, spread * 1.6 + 3.6) * (portrait ? 1.9 : 1);
+    // On the select screen the roster panel covers the lower half: aim low to lift the fighters.
+    if (mode === "select") { tmpA.set(mid, 1.2, z * 1.25); tmpB.set(mid, portrait ? 0.2 : 0.45, 0); }
+    else { tmpA.set(mid, 1.6, z); tmpB.set(mid, 1.05, 0); }
+  }
+  const k = Math.min(1, (mode === "title" ? 1.5 : 4) * real);
+  camPos.lerp(tmpA, k);
+  camLook.lerp(tmpB, k);
+  fight.shake = Math.max(0, fight.shake - real);
+  const sh = fight.shake * 0.25;
+  camera.position.set(camPos.x + (Math.random() - 0.5) * sh, camPos.y + (Math.random() - 0.5) * sh, camPos.z);
+  camera.lookAt(camLook);
+  sun.position.set(camLook.x - 4, 9, 7);
+  sun.target.position.set(camLook.x, 0, 0);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+/* ================================================================ boot */
+
+const startBtn = $("startBtn");
+startBtn.onclick = () => { ctx(); sfx.select(); goSelect(); };
+window.addEventListener("keydown", (e) => { if (mode === "title" && e.code === "Enter" && !startBtn.disabled) startBtn.click(); });
+
+await setArena("heritage-square");
+hero = new Fighter("hero", await loadGLB("/play/fighters/hero.glb"));
+hero.reset(0, 1);
+scene.add(hero.root);
+requestAnimationFrame(frame);
+startBtn.disabled = false;
+startBtn.innerHTML = 'Press start <span class="blink">▸</span>';
+getFighter("bib"); // warm the first opponent so the select screen is instant
+
+window.__game = { get mode() { return mode; }, get hero() { return hero; }, get foe() { return foe; }, fight, pressed, keys, startFight, openSection, goSelect, pick };
+</script>
+</body>
+</html>
